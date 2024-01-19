@@ -95,7 +95,7 @@ inline void __destroy_aux(ForwardIterator, ForwardIterator, __true_type) {}
 
 #### 第一级配置器 __malloc_alloc_template
 
-**<a herf="./code/第一级配置器剖析.cpp" title='第一级配置器剖析'><u>第一级配置器剖析代码</u></a>**
+<a href="./code/第一级配置器剖析.cpp">第一级配置器剖析代码</a>
 
 第一级配置器使用了malloc()，free()，realloc()来执行内存的配置，释放和重配置。实现了类似C++ new-handler机制
 
