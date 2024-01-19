@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "vector": "cpp"
+        "vector": "cpp",
+        "functional": "cpp",
+        "pthread_alloc": "cpp",
+        "iostream": "cpp"
     }
 }
