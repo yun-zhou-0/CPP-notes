@@ -335,3 +335,163 @@ uninitialized_fill_n(ForwardIterator first, Size n, const T& x);
 <img src='./img/memory.jpg'>
 
 **三个记忆基本函数的泛型版本与特化版本**
+
+# 迭代器iterator
+
+## 迭代器是一种智能指针 smart pointer
+
+迭代器最重要的工作时重载operator*和operator->
+
+## Traits编程技法
+
+迭代器所指对象的型别，称为该迭代器的value type,上述的参数型别推导 技巧虽然可用于value type,却非全面可用：万一 value type必须用于函数的传回值，就束手无策了。
+
+此时我们可以声明内嵌型别（type）
+
+```C++
+template <class I, class T>
+void func_impl(I iter, T t)
+{
+  T tmp; // 這裡解決了問題。T 就是迭代器所指之物的型別
+  // ... 這裡做原本 func() 應該做的全部工作
+};
+template <class I>
+inline void func(I iter)
+{
+  func_impl(iter, *iter); // func 的工作全部移func_impl
+}
+int main()
+{
+  int i;
+  func(&i);
+}
+```
+
+注意func()的返回类型前必须加上关键字typename，因为T是一个template参数。这样的用意在于告诉编译器这是一个type，才可顺利通过编译
+
+**但是，并不是所有的迭代器都是class type，比如指针**
+
+此时就需要使用template partial specialization（偏特化）了
+
+那么如何区分不同的iterator？
+
+**使用iterator_traits**来萃取迭代器的特性，而value type正是迭代器的特性之一
+
+```C++
+template <class I>
+struct iterator_traits{
+    typedef typename I::value_type value_type;
+};
+```
+
+这个所谓的 traits，其意义是，如果 I 定义有自己的value type，那么通过 这个traits的作用，萃取出来的value_type就是 I:value_type 。
+
+之前的func()可以进行以下改写
+
+```C++
+template <class I>
+typename iterator_traits<I>::value_type  // 這一整行是函式回返型別 
+func(I ite)
+{ return *ite; }
+```
+
+这样可以写一个traits的特化版本
+
+```C++
+template <class T>
+struct iterator_traits<T*>{
+    typedef T value_type;
+};
+```
+
+<img src='./img/iterator.jpg'>
+
+常见的物种迭代器相应类型：**value type，difference type，pointer，reference，iterator catagory**
+
+### value type
+
+即迭代器所指对象的型别
+
+任何一个与STL算法搭配的class，都应该定义自己的value type内嵌型别
+
+### difference type
+
+两个迭代器之间的距离，也可以表示一个容器的最大容量。
+
+如果是连续空间容器，头尾距离就是其最大容量。
+
+比如STL的count()
+
+```C++
+template<class I,class T>
+typename iterator_traits<I>::difference_type
+count(I first, I last, const T& value){
+    typename iterator_traits<I>::difference_type = 0;
+    for(; first != last; ++first)
+        if(*first == value)
+            ++n;
+    return n;
+}
+```
+
+除此之外也有针对原生指针和原生pointer-to-const的偏特化版本
+
+### reference type
+
+从“迭代器所指之物能否允许改变”的角度，分为constant iterator和mutable iterator。
+
+当我们对一个mutable iterator进行提领操作时，获得的应该是一个左值而不是右值，右值不允许赋值操作。
+
+<img src='./img/reference type.jpg'>
+
+传回左值都以by reference的方式进行。
+
+所以p是个**mutable iterator**时，value type为T，**\*p的型别应该是T&**
+
+p是个**constantiterator**时，value type为T，**\*p的型别应该是const T&**
+
+### pointer type
+
+同上，传回的时T\*或者const T\*
+
+### iterator_category
+
+**input iterator**： read only只读
+
+**output iterator**：write noly只写
+
+**forward iterator**：允许写入型算法在此种迭代器形成的区间操作（*operator++*）
+
+**bidirectional iterator**：可双向移动，某些算法需要你想走访某个迭代器区间（*operator--*）
+
+**random access iterator**：前四种都只供应一部分指针算术能力，第五种涵盖所有，随机寻址
+
+<img src='./img/iterator category.jpg'>
+
+```C++
+struct input_iterator_tag {};
+struct output_iterator_tag {};
+struct forward_iterator_tag :public input_iterator_tag{};
+struct bidirectional_iterator_tag :public forward_iterator_tag{};
+struct random_access_iterator_tag :public bidirectional_iterator_tag{};
+```
+
+**注意：原生指针和原生pointer-to-const是random access iterator**
+
+## Iterator源代码
+
+**<a href="./code/Iterator源码节选.cpp">Iterator源码节选</a>**
+
+## __type_traits
+
+\_\_type\_traits关注这个型别是否具备**non-trivial default ctor**？是否具备**non-trivial copy ctor**？是否具备**non-trivial assignment operator**？是否具备**non-trivial  dtor**？是不是**POD**类型？
+
+<img src='./img/type traits.jpg'>
+
+上述式子应该传回对象，且表示真假，所以传回的内容如下
+
+```C++
+struct __true_type{};
+struct __false_type{}
+```
+

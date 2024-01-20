@@ -3,6 +3,21 @@
         "vector": "cpp",
         "functional": "cpp",
         "pthread_alloc": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "memory": "c",
+        "array": "c",
+        "deque": "c",
+        "list": "c",
+        "string": "c",
+        "iterator": "c",
+        "string_view": "c",
+        "atomic": "c",
+        "complex": "c",
+        "unordered_map": "c",
+        "memory_resource": "c",
+        "optional": "c",
+        "initializer_list": "c",
+        "type_traits": "c",
+        "utility": "c"
     }
 }
