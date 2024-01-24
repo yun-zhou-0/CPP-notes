@@ -1258,23 +1258,7 @@ public:
 }; 
 ```
 
-#### push_back函数
 
-<img src="./img/vector1.jpg">
-
-<img src="./img/vector2.jpg">
-
-#### Vector’s Iterator
-
-```C++
-template<class T, class Alloc = alloc>
-class vector{
-public:
-    typedef T value_type;
-    typedef value_type* iterator;
-    ...
-}
-```
 
 ### Deque
 
