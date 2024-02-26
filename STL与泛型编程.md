@@ -975,7 +975,200 @@ class priority_queue{
     protected:
     Sequence c;		//底层容器
     Compare comp;	//元素大小比较标准
-    
+    ...
 }
 ```
+
+## slist
+
+slist是一个单向链表，iterator的类型是forward iterator。slist只提供push_back()，不提供push_front()。
+
+<img src="./img/slist.jpg">
+
+# 关联式容器——associative container
+
+关联式容器分为set和map两大类
+
+## RBTree
+
+红黑树的性质：
+
+1.   每个节点不是红色就是黑色
+2.   根节点为黑色
+3.   红色节点的父亲和儿子必为黑色
+4.   任一节点到尾端NULL的任何路径，所含黑节点数量相同
+
+## set
+
+set的key就是value
+
+set的iterator定义为RBTree的const_iterator，杜绝写入操作
+
+STL提供了一组有关set/multiset的算法，包括交集set_intersection，联集set_union，差集set_difference，对称差集 set_symmetric_diifference 
+
+**<a href="./code/set定义.cpp">set定义</a>**
+
+## map
+
+map的所有元素都是pair，拥有value和key
+
+```C++
+template <class T1, class T2>
+struct pair{
+    typedef T1 first_type;
+    typedef T2 second_type;
+    
+    T1 first;
+    T2 second;
+    pair() : first(T1()), second(T2()) {};
+    pair(const T1& a, const &T2 b) : first(a), second(b) {};
+};
+```
+
+map的iterator和set相同，不能更改，是const iterator
+
+## multiset和multimap
+
+允许键值重复
+
+## hashtable
+
+哈希表相关内容略
+
+## hash_set,hash_map,hash_multimap和hash_multiset
+
+和set，map，multiset，multimap类似。使用hashtable作为底层实现
+
+和上面类似，增删改查的时间复杂度是O(1)
+
+# 算法——algorithm
+
+## 质变算法和非质变算法
+
+质变算法会改变操作对象的值。迭代器所给出的区间上，质变算法会更改区间内的内容（比如copy，swap，replace，fill，remove等）
+
+非质变算法不会改变区间内的内容，（比如find，search，count，for_each，equal等）
+
+## 数值算法
+
+**<stl_numeric.h>**
+
+### accumulate
+
+```C++
+template <class InputIterator, class T>
+T accumulate(InputIterator first, InputIterator last, T init){
+    for(; first != last; ++first)
+        init = init + *first;	//单纯的累加操作
+    return init;
+}
+
+template <class InpoutIterator, class T, class BinaryOperation>
+T accumulate(InputIterator first, InputIterator last, T init, BinaryOperation binary_op){
+    for( ; first != last; ++first)
+        init = binary_op(init, *first);	//执行二元操作
+    return init;
+}
+```
+
+如果要计算[first, last)的元素总和，将init设置为0
+
+### adjacent_difference
+
+```C++
+//版本1
+template <class InputIterator, class OutputIterator>
+OutputIterator adjacent_difference(InputIterator first, InputIterator last, OutputIterator result){
+    if(first == last) return result;
+    *result = *first;
+    return __adjacent_difference(first, last, result, value_type(first));
+}
+
+template<class InputIterator, class OutputIterator, class T>
+OutputIterator __adjacent_difference(InputIterator first, InputIterator last, OutputIterator result, T*){
+    T value = *first;
+    while(++first != last){
+        T tmp = *first;
+        *++result = tmp - value;
+        value = tmp;
+    }
+    return ++result;
+}
+```
+
+<img src="./img/adj.png">
+
+<img src="./img/adj1.png">
+
+此算法用来计算[first,last)中相邻元素的差额
+
+### inner_product
+
+计算内积
+
+### partial_sum
+
+```C++
+template <class InputIterator, class OutputIterator>
+OutputIterator partial_sum(InputIterator first, InputIterator last, OutputIterator result){
+    if(first == last) return result;
+    *result = *first;
+    return __partial_sum(first, last, result, value_type(first));
+}
+
+template <class InputIterator, class OutputIterator, class T>
+OutputIterator __partial_sum(InputIterator first, InputIterator last, OutputIterator result, T*) {
+    T value = *first;
+    while(++first != last){
+        value = value + *first;
+        *++result = value;
+    }
+    return ++result;
+}
+
+```
+
+计算局部总和
+
+### power
+
+SGI专属，计算某数的n幂次方。
+
+```C++
+//版本一 乘幂
+template <class T, class Integer>
+inline T power(T x, Integer n){
+    return power(x, n, multiplies<T>());	//指定运算形式为乘法
+}
+
+//版本二 幂次方
+template <class T, class Integer, class MonoidOperation>
+T power(T x, Integer n, MonoidOperation op){
+    if(n == 0) return identity_element(op);
+    else {
+        while((n & 1) == 0){
+            n >>= 1;
+            x = op(x, x);
+        }
+        
+        T result = x;
+        n >>= 1;
+        while (n != 0)  {
+            x = op(x, x);
+            if((n & 1) != 0)
+                result = op(result, x);
+            n >>= 1;
+        }
+        return result;
+    }
+}
+```
+
+### itoa
+
+SGI专属，用于设定某个区间的内容
+
+## 基本算法
+
+**<stl_algobase.h>**
 

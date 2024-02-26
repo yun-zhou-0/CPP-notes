@@ -18,6 +18,8 @@
         "optional": "c",
         "initializer_list": "c",
         "type_traits": "c",
-        "utility": "c"
+        "utility": "c",
+        "*.tcc": "cpp",
+        "system_error": "cpp"
     }
 }
