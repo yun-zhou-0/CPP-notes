@@ -2,6 +2,7 @@
 #include <new>
 #define __THROW_BAD_ALLOC throw bad_alloc
 #elif !defined(__THROW_BAD_ALLOC)
+
 #include <iostream.h>
 #define __THROW_BAD_ALLOC                                                      \
   cerr << "out of memory" << endl;                                             \

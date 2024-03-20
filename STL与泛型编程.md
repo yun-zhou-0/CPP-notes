@@ -726,7 +726,7 @@ struct __deque_iterator {
 }
 ```
 
-<img src="./img/deque1.jpg">
+
 
 ```C++
 reference operator*() const{return *cur;}
@@ -1768,3 +1768,357 @@ void mergesort(BidirectionalIter first, BidirectionalIter last){
 }
 ```
 
+# 仿函数（函数对象）——functor
+
+## 可配接的关键（adaptable）的关键
+
+### unary_function
+
+unary_function用来呈现一元函数的参数型别和返回值型别
+
+```C++
+template<class Arg, class Result>
+struct unary_function{
+    typedef Arg argument_type;
+    typedef Result result_type;
+};
+```
+
+STL规定，每个Adaptable Unary Function都应该继承此类别
+
+### binary_function
+
+binary_function用来呈现二元函数的第一参数型别，第二参数型别和返回值型别
+
+```C++
+template <class Arg1, class Arg2, class Result>
+struct binary_function{
+    typedef Arg1 first_argument_type;
+    typedef Arg2 second_argument_type;
+    typedef Result result_type;
+};
+```
+
+## 算术类仿函数
+
+`plus<T> 加法, minus<T> 减法, mulstiplies<T> 乘法, divides<T> 除法, modulus<T> 模取, negate<T> 否定`
+
+```C++
+template<class T>
+struct plus : public binary_function<T, T, T>{
+    T operator()(const T& x, const T& y) const {return x + y;}
+}
+
+template<class T>
+struct minus : public binary_function<T, T, T>{
+    T operator()(const T& x, const T& y) const {return x - y;}
+}
+
+template<class T>
+struct mulstiplies : public binary_function<T, T, T>{
+    T operator()(const T& x, const T& y) const {return x * y;}
+}
+
+template<class T>
+struct divides : public binary_function<T, T, T>{
+    T operator()(const T& x, const T& y) const {return x / y;}
+}
+
+template<class T>
+struct modulus : public binary_function<T, T, T>{
+    T operator()(const T& x, const T& y) const {return x % y;}
+}
+
+template<class T>
+struct negate : public unary_function<T, T>{
+    T operator()(const T& x) const {return -x;}
+}
+```
+
+主要用以搭配STL算法
+
+```C++
+accumulate(iv.begin(), iv.end(), 1, multiplies<int>());
+```
+
+#### 证同元素 identity element
+
+所谓 “运算op的证同元素(identity element) ” ，意思是数值A若与该元素做op运算，会得到A自己。加法的证同元素为0,因为任何元素加上0仍为自己。乘法的证同元素为1, 因为任何元素乘以1仍为自己。
+
+### 关系运算类仿函数
+
+包括等于，不等于，大于，大于等于，小于，小于等于
+
+`equal_to<T>, not_equal_to<T>, greater<T>, greater_equal<T>, less<T>, less_equal<T>`
+
+### 逻辑运算类仿函数
+
+And，Or，Not
+
+`logical_and<T>, logical_or<T>, logical_not<T>`
+
+### 证同（identity），选择（select），投射（project）
+
+#### identity
+
+证同函数(identity function)。任何数值通过此函数后，不会有任何改变
+
+此式运用于<stl_set.h>, 用来指定RB-tree所需的KeyOfValue op,那是因为set元素的键值即实值，所以采用identity
+
+```C++
+template<class T>
+struct identity : public unary_function<T,T>{
+    const T& operator()(const T& x) const {return x;}
+};
+```
+
+#### select
+
+选择函数(selection function)：接受一个pair,传回其第一元素
+
+此式运用于<stl_map.h>, 用来指定RB-tree所需的KeyOfValue op, 由于map系以pair元素的第一元素为其键值，所以采用select1st
+
+```C++
+template<class pair>
+struct select1st : public unary_function<pair, typename pair::first_type& >{
+    const typename pair::first_type& operator()(const pair& x) const{
+        return x.first;
+    }
+};
+```
+
+接受一个pair,传回其第二元素
+
+```C++
+template<class pair>
+struct select2nd : public unary_function<pair, typename pair::second_type& >{
+    const typename pair::second_type& operator()(const pair& x) const{
+        return x.second;
+    }
+};
+```
+
+#### project
+
+投射函数：传回第一参数，忽略第二参数
+
+```C++
+template<class Arg1, class Arg2>
+struct project1st : public binary_function<Arg1, Arg2, Arg1>{
+    Arg1 operator()(const Arg1& x, const Arg2&) const {return x;}
+}
+```
+
+投射函数：传回第二参数，忽略第一参数
+
+```C++
+template<class Arg1, class Arg2>
+struct project2nd : public binary_function<Arg1, Arg2, Arg2>{
+    Arg2 operator()(const Arg1&, const Arg2& y) const {return y;}
+}
+```
+
+# 配接器——adapter
+
+## container adapter
+
+stack和queue，底层都使用了deque，实际上是deque的adapter
+
+## iterator adapter
+
+### insert iterator
+
+<img src="./img/insert_iterator.jpg">
+
+每个insert iterator内部都维护有一个容器，当客户端对insert iterator 赋值（assign）时，就在insert iterator中被转为对该容器迭代器做插入操作。
+
+insert iterator 的 operator= 相当于调用底层容器的push_front(), push_back(), insert()。
+
+<img src="./img/insert-iterator.jpg">
+
+<img src="./img/insert-iterator1.jpg">
+
+<img src="./img/insert-iterator2.jpg">
+
+### reverse iterator
+
+将迭代器的移动行为倒转。如果STL算法接受的不是一般正常的迭代器，而是这种逆向迭代器，它就会以从尾到头的方向来处理序列中的元素
+
+```C++
+// 将所有元素逆向拷贝到ite所指位置
+// rbegin() 和 rend() 与 reverse_iterator有关
+copy)(id.rbegin(), id.rend(), ite);
+```
+
+```C++
+reverse_iterator rbegin() {return reverse_iterator(end()); }
+reverse_iterator rend() {return reverse_iterator(begin()); }
+```
+
+reverse_iterator源代码
+
+```C++
+template <class Iterator>
+class reverse_iterator{
+    protected:
+    Iterator current;
+    
+    public:
+    typedef typename iterator_traits<Iterator>::iterator_category iterator_category;
+    typedef typename iterator_traits<Iterator>::value_type value_type;
+    typedef typename iterator_traits<Iterator>::difference_type difference_type;
+    typedef typename iterator_traits<Iterator>::pointer pointer;
+    typedef typename iterator_traits<Iterator>::reference reference;
+    typedef Iterator iterator_type;
+    typedef reverse_iterator<Iterator> self;
+    
+    public:
+    reverse_iterator(){}
+    explicit reverse_iterator(iterator_type x) : current(x) {}
+    reverse_iterator(const self& x): current(x.current){}
+    
+    iterator_type base() const {return current;}
+    reference operator*() const {
+        Iterator tmp = current;
+        return *--tmp;
+        // 以上为关键所在，对逆向迭代器取值，就是将“对应之正向迭代器”后退一格而后取值
+    }
+    pointer operator->() const {return &(operator*());}
+    
+    self& operator++(){
+        --current;
+        return *this;
+    }
+    
+    self operator++(int){
+        self tmp = *this;
+        --current;
+        return tmp;
+    }
+    
+    self& operator--(){
+        ++current;
+        return *this;
+    }
+    
+    self& operator--(int){
+        self tmp = *this;
+        ++current;
+        return tmp;
+    }
+    
+    self operator+(difference_type n)const {
+        return self(current - n);
+    }
+    self operator+=(difference_type n){
+        current -= n;
+        return *this;
+    }
+    self operator-(difference_type n)const {
+        return self(current + n);
+    }
+    self operator-=(difference_type n){
+        current += n;
+        return *this;
+    }
+    
+    reference operator[] (difference_type n) const {return *(*this + n);}
+}
+```
+
+### stream iterator
+
+将迭代器绑定到一个stream对象身上。绑定到istream对象上称为 istream_iterator，拥有输入能力，绑定到ostream对象上，称为ostream_iterator，拥有输出能力。
+
+<img src="./img/stream_iterator.jpg">
+
+<img src="./img/stream_iterator1.jpg">
+
+<img src="./img/stream_iterator2.jpg">
+
+<img src="./img/stream_iterator3.jpg">
+
+## function adapter
+
+内含一个member object
+
+### not1，not2
+
+```C++
+//以下这个配接器用来表示某个Adaptable Predicate的逻辑负值（logical negation）
+template<class Predicate>
+class unary_negate : public unary_function<typename Predicate::argument_type, bool>{
+    protected:
+    Predicate pred;
+    
+    public:
+    explicit unary_negate(const Predicate& x) : pred(X){}
+    bool operator() (const typename Predicate::argument_type& x) const{
+        return !pred(x);
+    }
+}
+
+//辅助函数。使我们得以方便使用unary_negate<Pred>
+template <class Predicate>
+inline unary_negate<Predicate> not1(const Predicate& pred){
+    return unary_negate<Predicate>(pred);
+}
+
+//以下这个配接器用来表示某个Adaptable Binary Predicate的逻辑负值
+template<class Predicate>
+class binary_nagate : public binary_function<typename Predicate::first_argument_type, typename Predicate::second_argument_type, bool>{
+    protected:
+    Predicate pred;
+    
+    public:
+    explicit binary_nagate(const Predicate& x) : pred(X){}
+    bool operator() (const typename Predicate::first_argument_type& x, const typename Predicate::second_argument_type& y) const{
+        return !pred(x, y);
+    }
+}
+
+//辅助函数。使我们得以方便使用binary_nagate<Pred>
+template <class Predicate>
+inline binary_nagate<Predicate> not2(const Predicate& pred){
+    return binary_nagate<Predicate>(pred);
+}
+
+```
+
+### 对参数进行绑定：bind1st，bind2nd
+
+**bind1st**
+
+<img src="./img/bind.jpg">
+
+**bind2nd**
+
+<img src="./img/bind1.jpg">
+
+<img src="./img/bind2.jpg">
+
+### 用于函数合成 compose1，compose2
+
+**compose1**
+
+<img src="./img/compose.jpg">
+
+**compose2**
+
+<img src="./img/compose1.jpg">
+
+### 用于函数指针：ptr_fun
+
+使得我们能把一般函数当作仿函数使用，一般函数当作仿函数传给STL算法。
+
+<img src="./img/ptr.jpg">
+
+<img src="./img/ptr1.jpg">
+
+### 用于成员的函数指针：mem_fun，mem_fun_ref
+
+这种配接器使我们能够将成员函数(member functions)当做仿函数来使用，于是成员函数可以搭配各种泛型算法
+
+<img src="./img/memfun.jpg">
+
+<img src="./img/memfun1.jpg">
